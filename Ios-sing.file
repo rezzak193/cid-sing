@@ -1,38 +1,8 @@
-name: iOS Signer
-
-on:
-  repository_dispatch:
-    types: [sign_ipa]
-
-jobs:
-  sign:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libz-dev libssl-dev
-          git clone https://github.com/shunjizhan/zsign.git
-          cd zsign && g++ *.cpp -lcrypto -lpthread -o zsign
-          sudo cp zsign /usr/local/bin/
-
-      - name: Prepare Certificates
+      - name: Prepare for OTA Deploy
         run: |
           mkdir -p build
-          # PHP bot se aayi hui files yahan use hongi
-          cp original.ipa build/
-          cp free_cert.p12 build/
-          cp free_cert.mobileprovision build/
+          mv signed.ipa build/signed.ipa
 
-      - name: Signing IPA
-        run: |
-          zsign -k build/free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m build/free_cert.mobileprovision -o build/signed.ipa build/original.ipa
-
-      - name: Generate Manifest.plist
-        run: |
           cat <<EOF > build/manifest.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -47,7 +17,7 @@ jobs:
                               <key>kind</key>
                               <string>software-package</string>
                               <key>url</key>
-                              <string>https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/signed.ipa</string>
+                              <string>https://${{ github.repository_owner }}.github.io/${{ github.repository }}/signed.ipa</string>
                           </dict>
                       </array>
                       <key>metadata</key>
@@ -68,8 +38,9 @@ jobs:
           EOF
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            publish_dir: ./build
-            publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
+          publish_branch: gh-pages
+          force_orphan: true
