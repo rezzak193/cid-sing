@@ -24,15 +24,14 @@ jobs:
             libminizip-dev \
             zlib1g-dev
 
-      - name: Setup Zsign (zhlynn fork - correct path 2026)
+      - name: Setup Zsign (zhlynn fork - correct binary path 2026)
         run: |
           git clone https://github.com/zhlynn/zsign.git
           cd zsign/build/linux
           make clean || true
           make
-          sudo cp zsign ../../zsign  # binary parent folder में copy
+          sudo cp ../../bin/zsign /usr/local/bin/zsign
           cd ../..
-          sudo cp zsign /usr/local/bin/zsign
           zsign --version || echo "Zsign build & install successful"
 
       - name: Signing IPA
