@@ -9,17 +9,24 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Zsign
+      - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libz-dev libssl-dev
-          git clone https://github.com/shunjizhan/zsign.git
-          cd zsign && g++ *.cpp -lcrypto -lpthread -o zsign
-          sudo cp zsign /usr/local/bin/
+
+      - name: Setup Zsign
+        run: |
+          # Zsign ko source se build karne ke bajaye direct download
+          wget https://github.com/shunjizhan/zsign/releases/download/v0.1/zsign_linux_x86_64.tar.gz || \
+          (git clone https://github.com/shunjizhan/zsign.git && cd zsign && g++ *.cpp -lcrypto -lpthread -o zsign && sudo cp zsign /usr/local/bin/)
+          if [ -f zsign_linux_x86_64.tar.gz ]; then
+            tar -xvf zsign_linux_x86_64.tar.gz
+            sudo cp zsign /usr/local/bin/
+          fi
 
       - name: Signing IPA
         run: |
-          # Verify files and sign
+          # Password aur Files verify karke sign karna
           zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
 
       - name: Upload Signed IPA
