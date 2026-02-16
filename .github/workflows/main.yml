@@ -1,10 +1,13 @@
 name: iOS Signer Engine
+
 on:
   repository_dispatch:
     types: [sign_ipa]
+
 jobs:
   sign:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -12,24 +15,37 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libz-dev libssl-dev openssl
+          sudo apt-get install -y \
+            git \
+            g++ \
+            make \
+            pkg-config \
+            libssl-dev \
+            libminizip-dev \
+            zlib1g-dev
 
-      - name: Setup Zsign (Final Fix 2026)
+      - name: Setup Zsign (zhlynn fork - active 2026)
         run: |
-          # Build karne ke bajaye binary source se setup
           git clone https://github.com/zhlynn/zsign.git
           cd zsign
-          # Manual source file mapping taaki *.cpp wala error na aaye
-          g++ common/*.cpp archo.cpp bundle.cpp macho.cpp openssl.cpp signing.cpp zsign.cpp -lcrypto -lpthread -I./ -o zsign
+          make clean
+          make
           sudo cp zsign /usr/local/bin/zsign
+          zsign --version || echo "Zsign build & install successful"
 
       - name: Signing IPA
         run: |
-          # Saved password ka use
-          zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
+          # Files bot से repo root में upload हो चुके हैं
+          zsign \
+            -k free_cert.p12 \
+            -p "${{ github.event.client_payload.p12_password }}" \
+            -m free_cert.mobileprovision \
+            -o signed.ipa \
+            original.ipa
 
-      - name: Upload Signed IPA
+      - name: Upload Signed IPA as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SignedApp
+          name: Signed_IPA
           path: signed.ipa
+          retention-days: 14
