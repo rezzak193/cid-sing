@@ -1,50 +1,33 @@
 name: iOS Signer Engine
-
 on:
   repository_dispatch:
     types: [sign_ipa]
-
 jobs:
   sign:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Dependencies for Zsign
+      - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            git \
-            g++ \
-            make \
-            pkg-config \
-            libssl-dev \
-            libminizip-dev
+          sudo apt-get install -y libz-dev libssl-dev openssl
 
-      - name: Setup Zsign (zhlynn fork - active in 2026)
+      - name: Setup Zsign
         run: |
-          git clone https://github.com/zhlynn/zsign.git
-          cd zsign/build/linux
-          make clean
-          make
-          sudo cp zsign /usr/local/bin/zsign  # binary build/linux में बनता है
-          zsign --version || echo "Zsign installed OK"
+          git clone https://github.com/shunjizhan/zsign.git
+          cd zsign
+          g++ *.cpp -lcrypto -lpthread -o zsign
+          sudo cp zsign /usr/local/bin/zsign
 
       - name: Signing IPA
         run: |
-          # Files repo में dispatch से upload होकर आ चुके हैं
-          zsign \
-            -k free_cert.p12 \
-            -p "${{ github.event.client_payload.p12_password }}" \
-            -m free_cert.mobileprovision \
-            -o signed.ipa \
-            original.ipa
+          # Payload se password uthakar sign karna
+          zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
 
       - name: Upload Signed IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Signed_IPA
+          name: SignedApp
           path: signed.ipa
-          retention-days: 14
