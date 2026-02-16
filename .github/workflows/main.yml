@@ -7,7 +7,7 @@ jobs:
   sign:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Important: File wapas repo mein save karne ke liye
+      contents: write
 
     steps:
       - name: Checkout Repository
@@ -18,7 +18,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git g++ make pkg-config libssl-dev libminizip-dev zlib1g-dev
 
-      - name: Setup Zsign (Working Fix)
+      - name: Setup Zsign (Full Fix)
         run: |
           git clone https://github.com/zhlynn/zsign.git
           cd zsign/build/linux
@@ -57,17 +57,18 @@ jobs:
                   <key>kind</key>
                   <string>software</string>
                   <key>title</key>
-                  <string>Signed App</string>
+                  <string>CID Signed App</string>
                 </dict>
-              </array>
-            </dict>
+              </dict>
+            </array>
+          </dict>
           </plist>
           EOF
 
-      - name: Push Signed Files to Repo
+      - name: Commit & Push Signed IPA
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add signed.ipa manifest.plist
-          git commit -m "Update signed files for direct install" || echo "No changes to commit"
+          git commit -m "Direct Install Update" || echo "No changes"
           git push origin main
