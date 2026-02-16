@@ -16,14 +16,16 @@ jobs:
 
       - name: Setup Zsign
         run: |
-          git clone https://github.com/shunjizhan/zsign.git
-          cd zsign
+          # Username issue bypass karne ke liye direct source download
+          wget https://github.com/shunjizhan/zsign/archive/refs/heads/master.zip
+          unzip master.zip
+          cd zsign-master
           g++ *.cpp -lcrypto -lpthread -o zsign
           sudo cp zsign /usr/local/bin/zsign
 
       - name: Signing IPA
         run: |
-          # Payload se password uthakar sign karna
+          # Bot se aaye huye payload password ka use
           zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
 
       - name: Upload Signed IPA
