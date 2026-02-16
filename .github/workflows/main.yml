@@ -24,13 +24,13 @@ jobs:
             libminizip-dev \
             zlib1g-dev
 
-      - name: Setup Zsign (zhlynn fork - fixed binary path)
+      - name: Setup Zsign (zhlynn fork - final binary path fix)
         run: |
           git clone https://github.com/zhlynn/zsign.git
           cd zsign/build/linux
           make clean || true
           make
-          sudo cp zsign /usr/local/bin/zsign
+          sudo cp bin/zsign /usr/local/bin/zsign
           cd ../..
           zsign --version || echo "Zsign build & install successful"
 
