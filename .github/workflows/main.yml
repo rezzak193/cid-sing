@@ -24,12 +24,14 @@ jobs:
             libminizip-dev \
             zlib1g-dev
 
-      - name: Setup Zsign (zhlynn fork - active 2026)
+      - name: Setup Zsign (zhlynn fork - correct path 2026)
         run: |
           git clone https://github.com/zhlynn/zsign.git
-          cd zsign
-          make clean || true          # ignore अगर clean target नहीं है
+          cd zsign/build/linux
+          make clean || true
           make
+          sudo cp zsign ../../zsign  # binary parent folder में copy
+          cd ../..
           sudo cp zsign /usr/local/bin/zsign
           zsign --version || echo "Zsign build & install successful"
 
