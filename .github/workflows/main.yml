@@ -14,17 +14,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libz-dev libssl-dev openssl
 
-      - name: Setup Zsign (Working Fix)
+      - name: Setup Zsign (Final Fix 2026)
         run: |
-          # Pehle se bani hui binary download karein taaki build error na aaye
+          # Build karne ke bajaye binary source se setup
           git clone https://github.com/zhlynn/zsign.git
           cd zsign
-          g++ *.cpp -lcrypto -lpthread -o zsign
+          # Manual source file mapping taaki *.cpp wala error na aaye
+          g++ common/*.cpp archo.cpp bundle.cpp macho.cpp openssl.cpp signing.cpp zsign.cpp -lcrypto -lpthread -I./ -o zsign
           sudo cp zsign /usr/local/bin/zsign
 
       - name: Signing IPA
         run: |
-          # Files check karna aur sign karna
+          # Saved password ka use
           zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
 
       - name: Upload Signed IPA
