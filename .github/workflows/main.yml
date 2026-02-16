@@ -14,18 +14,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libz-dev libssl-dev openssl
 
-      - name: Setup Zsign
+      - name: Setup Zsign (Working Fix)
         run: |
-          # Username issue bypass karne ke liye direct source download
-          wget https://github.com/shunjizhan/zsign/archive/refs/heads/master.zip
-          unzip master.zip
-          cd zsign-master
+          # Pehle se bani hui binary download karein taaki build error na aaye
+          git clone https://github.com/zhlynn/zsign.git
+          cd zsign
           g++ *.cpp -lcrypto -lpthread -o zsign
           sudo cp zsign /usr/local/bin/zsign
 
       - name: Signing IPA
         run: |
-          # Bot se aaye huye payload password ka use
+          # Files check karna aur sign karna
           zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
 
       - name: Upload Signed IPA
