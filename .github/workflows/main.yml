@@ -1,5 +1,4 @@
 name: iOS Signer Engine
-
 on:
   repository_dispatch:
     types: [sign_ipa]
@@ -7,6 +6,8 @@ on:
 jobs:
   sign:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Important: File wapas repo mein save karne ke liye
 
     steps:
       - name: Checkout Repository
@@ -15,37 +16,58 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            git \
-            g++ \
-            make \
-            pkg-config \
-            libssl-dev \
-            libminizip-dev \
-            zlib1g-dev
+          sudo apt-get install -y git g++ make pkg-config libssl-dev libminizip-dev zlib1g-dev
 
-      - name: Setup Zsign (zhlynn fork - correct binary path 2026)
+      - name: Setup Zsign (Working Fix)
         run: |
           git clone https://github.com/zhlynn/zsign.git
           cd zsign/build/linux
-          make clean || true
           make
           sudo cp ../../bin/zsign /usr/local/bin/zsign
-          cd ../..
-          zsign --version || echo "Zsign build & install successful"
 
       - name: Signing IPA
         run: |
-          zsign \
-            -k free_cert.p12 \
-            -p "${{ github.event.client_payload.p12_password }}" \
-            -m free_cert.mobileprovision \
-            -o signed.ipa \
-            original.ipa
+          zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
 
-      - name: Upload Signed IPA as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Signed_IPA
-          path: signed.ipa
-          retention-days: 14
+      - name: Create OTA Manifest
+        run: |
+          cat <<EOF > manifest.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>items</key>
+            <array>
+              <dict>
+                <key>assets</key>
+                <array>
+                  <dict>
+                    <key>kind</key>
+                    <string>software-package</string>
+                    <key>url</key>
+                    <string>https://raw.githubusercontent.com/${{ github.repository }}/main/signed.ipa</string>
+                  </dict>
+                </array>
+                <key>metadata</key>
+                <dict>
+                  <key>bundle-identifier</key>
+                  <string>*</string>
+                  <key>bundle-version</key>
+                  <string>1.0</string>
+                  <key>kind</key>
+                  <string>software</string>
+                  <key>title</key>
+                  <string>Signed App</string>
+                </dict>
+              </array>
+            </dict>
+          </plist>
+          EOF
+
+      - name: Push Signed Files to Repo
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add signed.ipa manifest.plist
+          git commit -m "Update signed files for direct install" || echo "No changes to commit"
+          git push origin main
