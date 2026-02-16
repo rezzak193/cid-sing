@@ -1,7 +1,7 @@
-      - name: Prepare for OTA Deploy
+      - name: Prepare OTA Files
         run: |
           mkdir -p build
-          mv signed.ipa build/signed.ipa
+          cp signed.ipa build/signed.ipa
 
           cat <<EOF > build/manifest.plist
           <?xml version="1.0" encoding="UTF-8"?>
@@ -23,7 +23,7 @@
                       <key>metadata</key>
                       <dict>
                           <key>bundle-identifier</key>
-                          <string>*</string>
+                          <string>com.example.signedapp</string>  <!-- ←←← यहाँ अपना Bundle ID डालो या auto extract step add करो -->
                           <key>bundle-version</key>
                           <string>1.0</string>
                           <key>kind</key>
