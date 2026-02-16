@@ -28,14 +28,13 @@ jobs:
         run: |
           git clone https://github.com/zhlynn/zsign.git
           cd zsign
-          make clean
+          make clean || true          # ignore अगर clean target नहीं है
           make
           sudo cp zsign /usr/local/bin/zsign
           zsign --version || echo "Zsign build & install successful"
 
       - name: Signing IPA
         run: |
-          # Files bot से repo root में upload हो चुके हैं
           zsign \
             -k free_cert.p12 \
             -p "${{ github.event.client_payload.p12_password }}" \
