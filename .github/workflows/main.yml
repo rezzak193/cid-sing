@@ -1,14 +1,12 @@
 name: iOS Signer Engine
-
 on:
   repository_dispatch:
     types: [sign_ipa]
-
 jobs:
   sign:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Setup Zsign
@@ -19,13 +17,13 @@ jobs:
           cd zsign && g++ *.cpp -lcrypto -lpthread -o zsign
           sudo cp zsign /usr/local/bin/
 
-      - name: Signing Process
+      - name: Signing IPA
         run: |
-          # Yeh files PHP bot bhejega
+          # Password aur Files verify karna
           zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
 
-      - name: Upload Signed IPA
+      - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: signed-app
+          name: SignedApp
           path: signed.ipa
