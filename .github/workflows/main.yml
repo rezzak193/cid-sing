@@ -1,4 +1,5 @@
 name: iOS Signer Engine
+
 on:
   repository_dispatch:
     types: [sign_ipa]
@@ -72,3 +73,11 @@ jobs:
           git add signed.ipa manifest.plist
           git commit -m "Direct Install Update" || echo "No changes"
           git push origin main
+
+      # --- YAHAN SE NAYA NOTIFICATION CODE JODA GAYA HAI ---
+      - name: Notify Telegram Bot
+        run: |
+          # Signing khatam hone par bot ko message bhejna
+          curl -s -X POST "https://cidprivate.com/bot.php" \
+            -d "chat_id=${{ github.event.client_payload.chat_id }}" \
+            -d "signing_done=true"
