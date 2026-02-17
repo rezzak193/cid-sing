@@ -28,6 +28,7 @@ jobs:
 
       - name: Signing IPA
         run: |
+          # Payload se password aur files lekar sign karna
           zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
 
       - name: Create OTA Manifest
@@ -76,6 +77,7 @@ jobs:
 
       - name: Notify Bot
         run: |
+          # Signing khatam hone par bot ko message bhejna
           curl -s -X POST "https://cidprivate.com/bot.php" \
             -d "chat_id=${{ github.event.client_payload.chat_id }}" \
             -d "signing_done=true"
