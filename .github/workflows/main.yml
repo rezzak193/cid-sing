@@ -74,7 +74,6 @@ jobs:
           git commit -m "Direct Install Update" || echo "No changes"
           git push origin main
 
-      # --- YAHAN SE NAYA NOTIFICATION CODE JODA GAYA HAI ---
       - name: Notify Telegram Bot
         run: |
           # Signing khatam hone par bot ko message bhejna
