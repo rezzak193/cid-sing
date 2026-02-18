@@ -27,6 +27,11 @@ jobs:
 
       - name: Signing IPA
         run: |
+          # Agar password empty hoga toh yahan error dikhayega
+          if [ -z "${{ github.event.client_payload.p12_password }}" ]; then
+            echo "Error: Password not received from bot!"
+            exit 1
+          fi
           zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
 
       - name: Create OTA Manifest
@@ -70,5 +75,5 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add signed.ipa manifest.plist
-          git commit -m "Direct Install Update" || echo "No changes"
+          git commit -m "Update signed files" || echo "No changes"
           git push origin main
