@@ -71,7 +71,7 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add signed.ipa manifest.plist
-          git commit -m "Update signed files" || echo "No changes"
+          git commit -m "Update signed IPA" || echo "No changes"
           git push origin main
 
       - name: Notify Bot
