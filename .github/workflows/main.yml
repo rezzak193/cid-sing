@@ -17,15 +17,15 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git g++ make pkg-config libssl-dev libminizip-dev zlib1g-dev unzip
+          sudo apt-get install -y git g++ make pkg-config libssl-dev libminizip-dev zlib1g-dev
 
-      - name: Setup Zsign
+      - name: Setup Zsign (zhlynn fork - final cp fix)
         run: |
           git clone https://github.com/zhlynn/zsign.git
           cd zsign/build/linux
           make clean || true
           make
-          # Binary build/linux/bin/zsign में बनता है
+          ls -la bin/  # debug: bin folder में zsign है या नहीं देखने के लिए
           sudo cp bin/zsign /usr/local/bin/zsign
           cd ../../..
           zsign --version || echo "Zsign installed successfully"
@@ -33,7 +33,7 @@ jobs:
       - name: Signing IPA
         run: |
           if [ -z "${{ github.event.client_payload.p12_password }}" ]; then
-            echo "Error: Password not received from bot!"
+            echo "Error: Password not received!"
             exit 1
           fi
           zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
@@ -60,13 +60,13 @@ jobs:
                 <key>metadata</key>
                 <dict>
                   <key>bundle-identifier</key>
-                  <string>com.example.signedapp</string>  <!-- यहाँ अपना Bundle ID डालो या नीचे extract step जोड़ो -->
+                  <string>com.example.yourapp</string>  <!-- अपना Bundle ID डालो -->
                   <key>bundle-version</key>
                   <string>1.0</string>
                   <key>kind</key>
                   <string>software</string>
                   <key>title</key>
-                  <string>CID Signed App</string>
+                  <string>Signed App</string>
                 </dict>
               </dict>
             </array>
@@ -79,5 +79,5 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add signed.ipa manifest.plist
-          git commit -m "Update signed IPA and OTA manifest [$(date +'%Y-%m-%d %H:%M')]" || echo "No changes to commit"
+          git commit -m "Update signed IPA and manifest" || echo "No changes"
           git push origin main
