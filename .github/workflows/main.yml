@@ -1,4 +1,5 @@
 name: iOS Signer Engine
+
 on:
   repository_dispatch:
     types: [sign_ipa]
@@ -16,18 +17,21 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git g++ make pkg-config libssl-dev libminizip-dev zlib1g-dev
+          sudo apt-get install -y git g++ make pkg-config libssl-dev libminizip-dev zlib1g-dev unzip
 
       - name: Setup Zsign
         run: |
           git clone https://github.com/zhlynn/zsign.git
           cd zsign/build/linux
+          make clean || true
           make
-          sudo cp ../../bin/zsign /usr/local/bin/zsign
+          # Binary build/linux/bin/zsign में बनता है
+          sudo cp bin/zsign /usr/local/bin/zsign
+          cd ../../..
+          zsign --version || echo "Zsign installed successfully"
 
       - name: Signing IPA
         run: |
-          # Agar password empty hoga toh yahan error dikhayega
           if [ -z "${{ github.event.client_payload.p12_password }}" ]; then
             echo "Error: Password not received from bot!"
             exit 1
@@ -56,7 +60,7 @@ jobs:
                 <key>metadata</key>
                 <dict>
                   <key>bundle-identifier</key>
-                  <string>*</string>
+                  <string>com.example.signedapp</string>  <!-- यहाँ अपना Bundle ID डालो या नीचे extract step जोड़ो -->
                   <key>bundle-version</key>
                   <string>1.0</string>
                   <key>kind</key>
@@ -70,10 +74,10 @@ jobs:
           </plist>
           EOF
 
-      - name: Commit & Push
+      - name: Commit & Push Signed Files
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add signed.ipa manifest.plist
-          git commit -m "Update signed files" || echo "No changes"
+          git commit -m "Update signed IPA and OTA manifest [$(date +'%Y-%m-%d %H:%M')]" || echo "No changes to commit"
           git push origin main
