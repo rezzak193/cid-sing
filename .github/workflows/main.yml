@@ -17,23 +17,22 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git g++ make pkg-config libssl-dev libminizip-dev zlib1g-dev
+          sudo apt-get install -y git g++ make pkg-config libssl-dev libminizip-dev zlib1g-dev unzip
 
-      - name: Setup Zsign (zhlynn fork - final cp fix)
+      - name: Setup Zsign
         run: |
           git clone https://github.com/zhlynn/zsign.git
           cd zsign/build/linux
           make clean || true
           make
-          ls -la bin/  # debug: bin folder में zsign है या नहीं देखने के लिए
           sudo cp bin/zsign /usr/local/bin/zsign
           cd ../../..
-          zsign --version || echo "Zsign installed successfully"
+          zsign --version || echo "Zsign installed OK"
 
       - name: Signing IPA
         run: |
           if [ -z "${{ github.event.client_payload.p12_password }}" ]; then
-            echo "Error: Password not received!"
+            echo "Error: No password received!"
             exit 1
           fi
           zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
@@ -79,5 +78,5 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add signed.ipa manifest.plist
-          git commit -m "Update signed IPA and manifest" || echo "No changes"
+          git commit -m "Signed IPA & manifest updated" || echo "No changes"
           git push origin main
