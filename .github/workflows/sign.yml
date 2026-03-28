@@ -1,7 +1,7 @@
 name: IPA Signer Engine
 on:
   repository_dispatch:
-    types: [sign_ipa]
+    types: [sign_ipa] # Ye line hona sabse zaroori hai bot ke liye
 
 jobs:
   sign:
@@ -13,16 +13,14 @@ jobs:
           git clone https://github.com/zhly0/zsign.git && cd zsign
           g++ *.cpp -lcrypto -O3 -o zsign && sudo cp zsign /usr/local/bin/
 
-      - name: Sign IPA
+      - name: Download and Sign
         run: |
           curl -L "${{ github.event.client_payload.ipa_url }}" -o app.ipa
           curl -L "${{ github.event.client_payload.p12_url }}" -o cert.p12
           curl -L "${{ github.event.client_payload.mp_url }}" -o prov.mobileprovision
           
-          # Signing with parameters from Bot
-          zsign -k cert.p12 -p "${{ github.event.client_payload.password }}" \
-          -m prov.mobileprovision \
-          -o signed.ipa app.ipa
+          # Signing Command
+          zsign -k cert.p12 -p "${{ github.event.client_payload.password }}" -m prov.mobileprovision -o signed.ipa app.ipa
           
       - name: Upload to Catbox
         run: |
@@ -32,4 +30,4 @@ jobs:
       - name: Notify Bot
         run: |
           curl -X POST "https://api.telegram.org/bot${{ github.event.client_payload.bot_token }}/sendMessage" \
-          -d "chat_id=${{ github.event.client_payload.chat_id }}&parse_mode=Markdown&text=✅ *IPA Signed!*%0A%0A📲 [Install App](itms-services://?action=download-manifest&url=https://cidprivate.com/ipabot/gen.php?url=${{ env.DIRECT_URL }})"
+          -d "chat_id=${{ github.event.client_payload.chat_id }}&parse_mode=Markdown&text=✅ *IPA Signed Successfully!*%0A%0A📲 [Install App](itms-services://?action=download-manifest&url=https://cidprivate.com/ipabot/gen.php?url=${{ env.DIRECT_URL }})"
