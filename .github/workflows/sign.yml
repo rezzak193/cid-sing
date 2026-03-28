@@ -1,7 +1,7 @@
 name: IPA Signer Engine
 on:
   repository_dispatch:
-    types: [sign_ipa] # Ye line hona sabse zaroori hai bot ke liye
+    types: [sign_ipa]
 
 jobs:
   sign:
@@ -9,17 +9,20 @@ jobs:
     steps:
       - name: Install zsign
         run: |
-          sudo apt update && sudo apt install g++ libssl-dev git -y
+          sudo apt update && sudo apt install g++ libssl-dev git curl -y
           git clone https://github.com/zhly0/zsign.git && cd zsign
           g++ *.cpp -lcrypto -O3 -o zsign && sudo cp zsign /usr/local/bin/
 
-      - name: Download and Sign
+      - name: Download Files
         run: |
-          curl -L "${{ github.event.client_payload.ipa_url }}" -o app.ipa
-          curl -L "${{ github.event.client_payload.p12_url }}" -o cert.p12
-          curl -L "${{ github.event.client_payload.mp_url }}" -o prov.mobileprovision
+          # Safe Download logic
+          curl -f -L "${{ github.event.client_payload.ipa_url }}" -o app.ipa || exit 1
+          # Agar p12 aur mp bot se nahi aa rahe, toh humein bot.php bhi update karna hoga
+          curl -f -L "${{ github.event.client_payload.p12_url }}" -o cert.p12 || exit 1
+          curl -f -L "${{ github.event.client_payload.mp_url }}" -o prov.mobileprovision || exit 1
           
-          # Signing Command
+      - name: Sign IPA
+        run: |
           zsign -k cert.p12 -p "${{ github.event.client_payload.password }}" -m prov.mobileprovision -o signed.ipa app.ipa
           
       - name: Upload to Catbox
