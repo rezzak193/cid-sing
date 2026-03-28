@@ -1,5 +1,4 @@
-name: iOS Signer Engine
-
+name: IPA Signer
 on:
   repository_dispatch:
     types: [sign_ipa]
@@ -7,76 +6,29 @@ on:
 jobs:
   sign:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install Dependencies
+      - name: Install zsign
         run: |
-          sudo apt-get update
-          sudo apt-get install -y git g++ make pkg-config libssl-dev libminizip-dev zlib1g-dev unzip
+          sudo apt update && sudo apt install -id g++ libssl-dev git -y
+          git clone https://github.com/zhly0/zsign.git && cd zsign
+          g++ *.cpp -lcrypto -O3 -o zsign && sudo cp zsign /usr/local/bin/
 
-      - name: Setup Zsign
+      - name: Download Files and Sign
         run: |
-          git clone https://github.com/zhlynn/zsign.git
-          cd zsign/build/linux
-          make clean || true
-          make
-          sudo cp bin/zsign /usr/local/bin/zsign
-          cd ../../..
-          zsign --version || echo "Zsign installed OK"
-
-      - name: Signing IPA
+          curl -L "${{ github.event.client_payload.ipa_url }}" -o app.ipa
+          curl -L "${{ github.event.client_payload.p12_url }}" -o cert.p12
+          curl -L "${{ github.event.client_payload.mp_url }}" -o prov.mobileprovision
+          
+          zsign -k cert.p12 -p "${{ github.event.client_payload.password }}" -m prov.mobileprovision -o signed.ipa app.ipa
+          
+      - name: Upload to Catbox
         run: |
-          if [ -z "${{ github.event.client_payload.p12_password }}" ]; then
-            echo "Error: No password received!"
-            exit 1
-          fi
-          zsign -k free_cert.p12 -p "${{ github.event.client_payload.p12_password }}" -m free_cert.mobileprovision -o signed.ipa original.ipa
-
-      - name: Create OTA Manifest
+          # Catbox upload logic (using curl)
+          RESULT=$(curl -F "reqtype=fileupload" -F "fileToUpload=@signed.ipa" https://catbox.moe/user/api.php)
+          echo "DIRECT_URL=$RESULT" >> $GITHUB_ENV
+          
+      - name: Notify Bot (Callback)
         run: |
-          cat <<EOF > manifest.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>items</key>
-            <array>
-              <dict>
-                <key>assets</key>
-                <array>
-                  <dict>
-                    <key>kind</key>
-                    <string>software-package</string>
-                    <key>url</key>
-                    <string>https://raw.githubusercontent.com/${{ github.repository }}/main/signed.ipa</string>
-                  </dict>
-                </array>
-                <key>metadata</key>
-                <dict>
-                  <key>bundle-identifier</key>
-                  <string>com.example.yourapp</string>  <!-- अपना Bundle ID डालो -->
-                  <key>bundle-version</key>
-                  <string>1.0</string>
-                  <key>kind</key>
-                  <string>software</string>
-                  <key>title</key>
-                  <string>Signed App</string>
-                </dict>
-              </dict>
-            </array>
-          </dict>
-          </plist>
-          EOF
-
-      - name: Commit & Push Signed Files
-        run: |
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git add signed.ipa manifest.plist
-          git commit -m "Signed IPA & manifest updated" || echo "No changes"
-          git push origin main
+          # Yahan GitHub aapke bot ko bata dega ki kaam ho gaya
+          curl -X POST "https://api.telegram.org/bot${{ github.event.client_payload.bot_token }}/sendMessage" \
+          -d "chat_id=${{ github.event.client_payload.chat_id }}&text=✅ Signing Done! Download here: ${{ env.DIRECT_URL }}"
